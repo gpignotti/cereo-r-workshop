@@ -11,6 +11,19 @@ abstract: |
 output: html_document
 ---
 
+```{r global, include=FALSE}
+knitr::opts_chunk$set(message=FALSE)
+
+library(tidyverse)
+library(kableExtra)
+
+setwd("~/OneDrive/ProgrammingLearning/R/ReproducibleResearchWorkshop/cereo-r-workshop")
+```
+<!-- echo=FALSE does not display code, but still results in doc -->
+<!-- message=FALSE prevent messages from appearing in document -->
+<!-- warnings=FALSE suppresses warning messages from code -->
+<!-- include=FALSE prevents code and results from appearing, but still run and is usable -->
+
 # Header 1
 Biggest
 
@@ -49,6 +62,7 @@ Line 1 <br>
 Line 2
 
 \* `<br>` starts a new line, it doesn't start a new paragraph
+<!-- Backticks for code -->
 
 <!-- Paragraph -->
 Topic 1. Paragraph  
@@ -63,6 +77,235 @@ Here is a sentence with a footnote[^1].This sentence follows footnote[^2].
 <!-- Footnote section -->
 [^1]: Here is our first footnote.
 [^2]: Footnote the second
+
+This is intro of doc from important person in block quotes.
+
+> This is our important quote.
+>
+> Second section of quote from ***really*** important person.
+>
+>> Nested quote.
+
+<!-- Lists -->
+Here are our lists for a roadmap:  
+
+1. Item 1
+2. Item 2
+3. Item 3
+
+Numbers sequence doesn't matter
+
+1. Item 1
+1. Item 2
+1. Item 3
+
+Symbol lists
+
+- Item 1 
+- Item 2
+- Item 3
+
+A differnt symbol
+
+* Item 1
+* Item 2
+* Item 3
+
+Sublists
+<!-- Indent 4 spaces -->
+
+1. Item 1
+    i. Subitem 1
+2. Item 2
+    ii. Subitem 2
+3. Item 3
+    iii. Subitem 3
+    
+We can include blockquots within our lists
+
+> This is a super important list
+>
+> 1. Item 1
+> 2. Item 2
+> 3. Item 3
+
+If we want to provide further descrip of items
+
+1. Item 1  
+
+    This is our paragraph for Item 1. 
+    
+2. Item 2  
+
+    This is our paragraph for Item 2.
+    
+3. Item 3  
+
+    > This is our blockquote for Item 3.
+    
+<!-- User-typed tables -->
+
+  Col 1     Col 2     Col 3     Col 4
+ ------     ------   -------    -----
+ 1          2         3         4
+ 5          6         7         8
+ 
+Table: Demo of a messy table
+
+
+  Col 1     Col 2     Col 3     Col 4
+  -----     -----     -----     -----
+   1          2         3         4
+   5          6         7         8
+ 
+Table: Demo of a clean table
+
+<!-- Links -->
+Let's include a few links that are ***important***
+<https://rmarkdown.rstudio.com/lesson-1.html> or with hyperlinks [name of link](https://rmarkdown.rstudio.com/lesson-1.html)
+
+We can include graphics within the RMd file.
+
+![](https://bookdown.org/yihui/rmarkdown/images/hex-rmarkdown.png)
+
+But that's way too big...
+
+![](https://bookdown.org/yihui/rmarkdown/images/hex-rmarkdown.png){width=10%}
+
+<!-- Getting into code chunks -->
+<!-- Ctrl - Alt - I -->
+# Intro to Code Chunks
+
+```{r graphic1, out.width='15%', echo=FALSE, fig.align='center', fig.cap='Figure caption'}
+knitr::include_graphics('https://bookdown.org/yihui/rmarkdown/images/hex-rmarkdown.png')
+```
+
+```{r data_xy, echo=TRUE}
+x = rnorm(n=100, mean=5, sd=1)
+y = 2 + 2*x + rnorm(n=100)
+```
+
+```{r data_plot, echo=TRUE, align='center'}
+plot(x, y, main='Y=f(x)')
+```
+
+<!-- For math typesetting -->
+ 
+Our response variabe $y$ is distributed $\mathcal{N}(\mu, \sigma^2)$, where
+\begin{align}
+\mu &= 2 + 2E[x] + E[e] \\
+\sigma^2 &= 2^2Var[x] + 1^2Var[e] + 2*2*1Cov[x,e]
+\end{align}
+
+$$
+y = f(x)
+$$
+
+Our small sample provides $\mu=$ `r mean(y)` and $\sigma^2=$ `r var(y)`
+
+Our small sample provides $\mu=$ `r round(mean(y), digits=2)` and $\sigma^2=$ `r round(var(y), digits=2)`
+
+  Col 1     Col 2       Col 3       Col 4
+  -----     -----       -----       -----
+   1        `r mean(y)` `r var(y)`     4
+   5          6         7             8
+ 
+Table: Demo of a `R` output table
+
+# Bigger and Better Data
+
+```{r data_import, echo=TRUE}
+library(tidyverse)
+df_all = read_csv('data/daily_bike_data.csv')
+dftemp = df_all %>%
+  select(cnt, temp)
+```
+```{r data_summary, echo=TRUE}
+ss_dftemp = sapply(dftemp, function(j) 
+                            c(mean(j), min(j), max(j), sd(j))) %>%
+  data.frame() %>% 
+  round(digits=2) 
+
+row.names(ss_dftemp) = c("mean", "min", "max", "sd")
+
+ss_dftemp %>% kable(caption="Summary Statistics")
+```
+
+Here is a graphic relationship beteween `cnt` and `temp`
+
+```{r data_vis, echo=TRUE, fig.align='center'}
+ggplot(data=dftemp, aes(x=temp, y=cnt)) +
+  theme_classic() +
+  geom_point() +
+  labs(title='Daily Bike Rental and Tempearture',
+       x='Temperature (F, normalized)',
+       y='Bike Rentals') +
+  theme(plot.title=element_text(face='bold', hjust=0.5))
+```
+
+<!-- Initial model relationships -->
+
+```{r data_mods, echo=TRUE}
+dftemp = dftemp %>% 
+  mutate(temp2 = temp^2)
+
+# construct linear model for slope association
+mod1 = lm(cnt ~ temp, data=dftemp)
+
+# construct basis expansion for curvature question
+# mod2 = lm(cnt ~ temp + temp2, data=dftemp)
+mod2 = lm(cnt ~ ., data=dftemp)
+
+# get model predictions
+pred_mod1 = predict(mod1, dftemp['temp'])
+pred_mod2 = predict(mod2, dftemp[c('temp', 'temp2')])
+# pred_mod2 = predict(mod2, dftemp[, -1])
+
+# update dataframe
+pred_dftemp = dftemp %>% 
+  mutate(cnt_mod=pred_mod1, cnt_mod2=pred_mod2)
+```
+
+Presented below are model summary statistics
+```{r model_summary, echo=TRUE}
+summary(mod1)$coefficient %>% 
+  kable(caption="Model 1 Summary (Dep. cnt)", digits=3)
+
+#OR
+broom::tidy(mod2) %>% 
+  kable(caption="Model 2 Summary (Dep. cnt", digits=3)
+
+```
+
+Here is what models look like with data
+
+```{r mod_vis, echo=TRUE}
+ggplot(data=pred_dftemp, aes(x=temp, y=cnt)) +
+  theme_classic() +
+  geom_point() +
+  geom_line(aes(x=temp, y=cnt_mod), color='red', size=1) +
+  geom_line(aes(x=temp, y=cnt_mod2), color='blue', size=1) +
+  labs(title='Daily Bike Rental and Tempearture',
+       x='Temperature (F, normalized)',
+       y='Bike Rentals') +
+  theme(plot.title=element_text(face='bold', hjust=0.5))
+
+```
+
+```{r mod_vis2, echo=TRUE}
+ggplot(data=pred_dftemp, aes(x=temp, y=cnt)) +
+  theme_classic() +
+  geom_point() +
+  geom_line(aes(x=temp, y=cnt_mod, color='f(temp)'), size=1) +
+  geom_line(aes(x=temp, y=cnt_mod2, color='f(temp, temp2)'), size=1) +
+  labs(title='Daily Bike Rental and Tempearture',
+       x='Temperature (F, normalized)',
+       y='Bike Rentals') +
+  theme(plot.title=element_text(face='bold', hjust=0.5)) +
+  scale_color_manual(name='Models', values=c('f(temp)'='red', 'f(temp, temp2)'='blue'))
+
+```
+
 
 
 
